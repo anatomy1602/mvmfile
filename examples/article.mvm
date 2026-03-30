@@ -1,0 +1,69 @@
+===MODEL===
+@type Article
+@version 1.0
+
+title: string
+subtitle: string?
+author: string
+date: datetime
+category: enum(tech|design|life|thought)
+tags: array<string>
+sections: array<Section>
+
+@type Section
+heading: string
+body: text
+format: enum(paragraph|quote|code|list|warning|tip)
+items: array<string>?
+source: url?
+
+===MSG===
+title: 为什么我们需要 MVM 文件格式
+subtitle: 从 Markdown 到无限视图
+author: Alice
+date: 2026-03-31T12:00:00Z
+category: tech
+tags: [MVM, 文件格式, 架构设计, 前端]
+
+sections:
+  ## heading: 问题的起源
+  format: paragraph
+  body: |
+    Markdown 是文本领域的 MVM，但它有一个根本限制：
+    结构与内容混在一起，无法精确驱动多视图渲染。
+    我们需要一种新格式，彻底分离结构与内容。
+
+  ## heading: 核心洞察
+  format: quote
+  body: |
+    结构归结构，信息归信息，视图归视图。
+    这就是 MVM 的全部秘密。
+
+  ## heading: 关键区别
+  format: list
+  body: |
+    三种格式的核心区别一览。
+  items:
+    - JSON: 结构强，写内容痛苦
+    - Markdown: 写内容舒服，结构弱
+    - MVM: 结构强 + 内容自然 + 无视图
+
+  ## heading: 技术参考
+  format: code
+  body: |
+    function parseMVM(content) {
+      const model = parseBlock(content, 'MODEL');
+      const msg = parseBlock(content, 'MSG');
+      return { model, msg };
+    }
+  source: https://example.com/mvm
+
+  ## heading: 前沿技术同构
+  format: tip
+  body: |
+    MVM 思想已在多个前沿领域落地：
+    - 声明式 UI（Compose/SwiftUI/React）
+    - 跨平台架构（KMP/Flutter）
+    - 微前端 3.0
+    - AI Agent 架构
+    - 多模态渲染
