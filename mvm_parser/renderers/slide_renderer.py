@@ -22,9 +22,13 @@ class SlideRenderer(BaseRenderer):
         slides_html = self._render_title_slide(title, subtitle, author)
 
         content_sections = [s for s in sections if isinstance(s, DataObject)]
-        for i in range(0, len(content_sections), 2):
-            chunk = content_sections[i:i + 2]
-            slides_html += self._render_content_slide(chunk)
+        for section in content_sections:
+            children = section.get("children", [])
+            fmt = section.get("format", "paragraph")
+            if children and fmt in ("tab", "accordion", "quiz"):
+                slides_html += self._render_container_slides(section, children)
+            else:
+                slides_html += self._render_single_section(section)
 
         return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -194,6 +198,41 @@ Reveal.initialize({{
 
         body_html = f'<div class="slide-body">{html.escape(body)}</div>' if body else ""
         return f"<section>\n{heading_html}\n{body_html}\n</section>"
+
+    def _render_container_slides(self, section: DataObject, children: list) -> str:
+        heading = section.get("heading", "")
+        fmt = section.get("format", "paragraph")
+        slides = ""
+
+        title_slide = f'<section>\n<h2>{html.escape(heading)}</h2>\n</section>'
+        slides += title_slide
+
+        for child in children:
+            if not isinstance(child, DataObject):
+                continue
+            child_fmt = fmt
+            if fmt == "quiz":
+                slides += self._render_quiz_slide(child)
+            else:
+                slides += self._render_single_section(child)
+
+        return slides
+
+    def _render_quiz_slide(self, section: DataObject) -> str:
+        question = section.get("heading", "")
+        options = section.get("items", [])
+        correct = section.get("correct_answer", 0)
+        explanation = section.get("body", "")
+
+        heading_html = f"<h2>{html.escape(question)}</h2>"
+        opts_html = ""
+        for oi, opt in enumerate(options):
+            marker = "✅ " if oi == correct else "○ "
+            opts_html += f"<li>{marker}{html.escape(opt)}</li>"
+        opts_block = f"<ul>{opts_html}</ul>"
+        explain_html = f'<div class="slide-body" style="margin-top:16px;font-size:0.85em;color:#666;">{html.escape(explanation)}</div>' if explanation else ""
+
+        return f"<section>\n{heading_html}\n{opts_block}\n{explain_html}\n</section>"
 
     def _render_two_sections(self, s1: DataObject, s2: DataObject) -> str:
         h1 = s1.get("heading", "")

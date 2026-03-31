@@ -193,6 +193,47 @@ body {{
 .source a:hover {{
   text-decoration: underline;
 }}
+.format-tab .tab-list {{
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+}}
+.format-tab .tab-item {{
+  padding: 16px 20px;
+  border-bottom: 1px solid #e8e8e8;
+}}
+.format-tab .tab-item:last-child {{
+  border-bottom: none;
+}}
+.format-tab .tab-item h3 {{
+  font-size: 1.1em;
+  color: #3498db;
+  margin-bottom: 8px;
+}}
+.format-accordion .accordion-list {{
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+}}
+.format-accordion .accordion-item {{
+  border-bottom: 1px solid #e8e8e8;
+}}
+.format-accordion .accordion-item:last-child {{
+  border-bottom: none;
+}}
+.format-accordion .accordion-item summary {{
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #16213e;
+  background: #f8f9fa;
+}}
+.format-accordion .accordion-item summary:hover {{
+  background: #eef1f5;
+}}
+.format-accordion .accordion-item .body {{
+  padding: 12px 20px;
+}}
 .footer {{
   margin-top: 48px;
   padding-top: 24px;
@@ -228,6 +269,10 @@ body {{
         fmt = section.get("format", "paragraph")
         items = section.get("items", [])
         source = section.get("source", "")
+        children = section.get("children", [])
+
+        if children and fmt in ("tab", "accordion"):
+            return self._render_container_section(section, children)
 
         css_class = f"format-{fmt}" if fmt != "paragraph" else ""
         heading_html = f"<h2>{html.escape(heading)}</h2>"
@@ -247,3 +292,52 @@ body {{
             source_html = f'<div class="source"><a href="{html.escape(source)}">{html.escape(source)}</a></div>'
 
         return f'<div class="section {css_class}">\n{heading_html}\n{body_html}\n{items_html}\n{source_html}\n</div>'
+
+    def _render_container_section(self, section: DataObject, children: list) -> str:
+        fmt = section.get("format", "paragraph")
+        heading = section.get("heading", "")
+        heading_html = f"<h2>{html.escape(heading)}</h2>"
+
+        if fmt == "tab":
+            return self._render_static_tab(heading_html, children)
+        elif fmt == "accordion":
+            return self._render_static_accordion(heading_html, children)
+        return self._render_section(section)
+
+    def _render_static_tab(self, heading_html: str, children: list) -> str:
+        tabs_html = ""
+        for i, child in enumerate(children):
+            if not isinstance(child, DataObject):
+                continue
+            h = child.get("heading", f"Tab {i+1}")
+            b = child.get("body", "")
+            body_part = f'<div class="body">{html.escape(b)}</div>\n' if b else ""
+            tabs_html += (
+                f'<div class="tab-item">\n'
+                f'<h3>{html.escape(h)}</h3>\n'
+                f'{body_part}'
+                f'</div>\n'
+            )
+        return (
+            f'<div class="section format-tab">\n{heading_html}\n'
+            f'<div class="tab-list">{tabs_html}</div>\n</div>'
+        )
+
+    def _render_static_accordion(self, heading_html: str, children: list) -> str:
+        items_html = ""
+        for child in children:
+            if not isinstance(child, DataObject):
+                continue
+            h = child.get("heading", "")
+            b = child.get("body", "")
+            body_part = f'<div class="body">{html.escape(b)}</div>\n' if b else ""
+            items_html += (
+                f'<details class="accordion-item">\n'
+                f'<summary>{html.escape(h)}</summary>\n'
+                f'{body_part}'
+                f'</details>\n'
+            )
+        return (
+            f'<div class="section format-accordion">\n{heading_html}\n'
+            f'<div class="accordion-list">{items_html}</div>\n</div>'
+        )

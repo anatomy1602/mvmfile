@@ -60,6 +60,10 @@ class MdRenderer(BaseRenderer):
         fmt = section.get("format", "paragraph")
         items = section.get("items", [])
         source = section.get("source", "")
+        children = section.get("children", [])
+
+        if children and fmt in ("tab", "accordion", "quiz"):
+            return self._render_container_section(section, index)
 
         if fmt == "quote":
             if heading:
@@ -96,5 +100,60 @@ class MdRenderer(BaseRenderer):
         if source:
             lines.append(f"[source]({source})")
             lines.append("")
+
+        return "\n".join(lines)
+
+    def _render_container_section(self, section: DataObject, index: int) -> str:
+        lines = []
+        heading = section.get("heading", "")
+        fmt = section.get("format", "paragraph")
+        children = section.get("children", [])
+
+        if heading:
+            lines.append(f"## {heading}")
+            lines.append("")
+
+        if fmt == "tab":
+            for i, child in enumerate(children):
+                if not isinstance(child, DataObject):
+                    continue
+                h = child.get("heading", f"Tab {i+1}")
+                b = child.get("body", "")
+                lines.append(f"### {h}")
+                lines.append("")
+                if b:
+                    lines.append(b)
+                    lines.append("")
+        elif fmt == "accordion":
+            for child in children:
+                if not isinstance(child, DataObject):
+                    continue
+                h = child.get("heading", "")
+                b = child.get("body", "")
+                lines.append(f"<details>")
+                lines.append(f"<summary>{h}</summary>")
+                lines.append("")
+                if b:
+                    lines.append(b)
+                    lines.append("")
+                lines.append(f"</details>")
+                lines.append("")
+        elif fmt == "quiz":
+            for qi, child in enumerate(children):
+                if not isinstance(child, DataObject):
+                    continue
+                q = child.get("heading", "")
+                opts = child.get("items", [])
+                correct = child.get("correct_answer", 0)
+                explanation = child.get("body", "")
+                lines.append(f"**Q{qi+1}: {q}**")
+                lines.append("")
+                for oi, opt in enumerate(opts):
+                    marker = "✅" if oi == correct else "○"
+                    lines.append(f"- {marker} {opt}")
+                lines.append("")
+                if explanation:
+                    lines.append(f"> {explanation}")
+                    lines.append("")
 
         return "\n".join(lines)

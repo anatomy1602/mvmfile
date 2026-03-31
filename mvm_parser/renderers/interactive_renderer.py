@@ -22,8 +22,7 @@ class InteractiveWebRenderer(BaseRenderer):
         tags = data.get("tags", [])
         sections = data.get("sections", [])
 
-        grouped = self._group_sections(sections)
-        sections_html = self._render_grouped(grouped)
+        sections_html = self._render_sections(sections)
 
         tags_html = " ".join(
             f'<span class="tag">{html.escape(t)}</span>' for t in tags
@@ -91,53 +90,36 @@ class InteractiveWebRenderer(BaseRenderer):
 </body>
 </html>"""
 
-    def _group_sections(self, sections: list) -> dict:
-        groups = {}
-        ungrouped = []
+    def _render_sections(self, sections: list) -> str:
+        parts = []
         for s in sections:
             if not isinstance(s, DataObject):
                 continue
             fmt = s.get("format", "paragraph")
-            if fmt == "tab":
-                key = s.get("tab_group", "default")
-                groups.setdefault(("tab", key), []).append(s)
-            elif fmt == "accordion":
-                key = s.get("accordion_group", "default")
-                groups.setdefault(("accordion", key), []).append(s)
-            elif fmt == "timeline":
-                key = s.get("timeline_group", "default")
-                groups.setdefault(("timeline", key), []).append(s)
-            elif fmt == "flashcard":
-                key = s.get("flashcard_group", "default")
-                groups.setdefault(("flashcard", key), []).append(s)
-            elif fmt == "quiz":
-                key = s.get("quiz_group", "default")
-                groups.setdefault(("quiz", key), []).append(s)
-            elif fmt == "reveal":
-                key = s.get("reveal_group", "default")
-                groups.setdefault(("reveal", key), []).append(s)
+            children = s.get("children", [])
+            if children and fmt in ("tab", "accordion", "timeline", "flashcard", "quiz", "reveal"):
+                parts.append(self._render_container_section(s, children))
             else:
-                ungrouped.append(s)
-        return {"groups": groups, "ungrouped": ungrouped}
-
-    def _render_grouped(self, grouped: dict) -> str:
-        parts = []
-        for s in grouped["ungrouped"]:
-            parts.append(self._render_basic_section(s))
-        for (kind, key), items in grouped["groups"].items():
-            if kind == "tab":
-                parts.append(self._render_tab_group(items, key))
-            elif kind == "accordion":
-                parts.append(self._render_accordion_group(items, key))
-            elif kind == "timeline":
-                parts.append(self._render_timeline_group(items))
-            elif kind == "flashcard":
-                parts.append(self._render_flashcard_group(items))
-            elif kind == "quiz":
-                parts.append(self._render_quiz_group(items))
-            elif kind == "reveal":
-                parts.append(self._render_reveal_group(items, key))
+                parts.append(self._render_basic_section(s))
         return "\n".join(parts)
+
+    def _render_container_section(self, section: DataObject, children: list) -> str:
+        fmt = section.get("format", "paragraph")
+        heading = section.get("heading", "")
+        group_id = heading or "default"
+        if fmt == "tab":
+            return self._render_tab_group(children, group_id, heading)
+        elif fmt == "accordion":
+            return self._render_accordion_group(children, group_id, heading)
+        elif fmt == "timeline":
+            return self._render_timeline_group(children, heading)
+        elif fmt == "flashcard":
+            return self._render_flashcard_group(children, heading)
+        elif fmt == "quiz":
+            return self._render_quiz_group(children, heading)
+        elif fmt == "reveal":
+            return self._render_reveal_group(children, group_id, heading)
+        return self._render_basic_section(section)
 
     def _render_basic_section(self, section: DataObject) -> str:
         heading = section.get("heading", "")
@@ -172,8 +154,9 @@ class InteractiveWebRenderer(BaseRenderer):
             f"{heading_html}\n{body_html}\n{items_html}\n{source_html}\n</div>"
         )
 
-    def _render_tab_group(self, items: list, group_id: str) -> str:
+    def _render_tab_group(self, items: list, group_id: str, heading: str = "") -> str:
         safe_id = html.escape(group_id)
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         tab_btns = ""
         tab_panels = ""
         for i, s in enumerate(items):
@@ -198,13 +181,15 @@ class InteractiveWebRenderer(BaseRenderer):
             )
         return (
             f'<div class="section tab-group" data-section>\n'
+            f'{heading_html}'
             f'<div class="tab-bar">{tab_btns}</div>\n'
             f'<div class="tab-content">{tab_panels}</div>\n'
             f"</div>"
         )
 
-    def _render_accordion_group(self, items: list, group_id: str) -> str:
+    def _render_accordion_group(self, items: list, group_id: str, heading: str = "") -> str:
         safe_id = html.escape(group_id)
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         panels = ""
         for i, s in enumerate(items):
             heading = s.get("heading", f"Section {i+1}")
@@ -226,10 +211,11 @@ class InteractiveWebRenderer(BaseRenderer):
                 f'</div>\n'
             )
         return (
-            f'<div class="section accordion-group" data-section>\n{panels}</div>'
+            f'<div class="section accordion-group" data-section>\n{heading_html}{panels}</div>'
         )
 
-    def _render_timeline_group(self, items: list) -> str:
+    def _render_timeline_group(self, items: list, heading: str = "") -> str:
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         entries = ""
         for i, s in enumerate(items):
             heading = s.get("heading", "")
@@ -245,10 +231,11 @@ class InteractiveWebRenderer(BaseRenderer):
             )
         return (
             f'<div class="section timeline-group" data-section>\n'
-            f'<div class="timeline">{entries}</div>\n</div>'
+            f'{heading_html}<div class="timeline">{entries}</div>\n</div>'
         )
 
-    def _render_flashcard_group(self, items: list) -> str:
+    def _render_flashcard_group(self, items: list, heading: str = "") -> str:
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         cards = ""
         for s in items:
             front = s.get("heading", "")
@@ -266,12 +253,13 @@ class InteractiveWebRenderer(BaseRenderer):
             )
         return (
             f'<div class="section flashcard-group" data-section>\n'
-            f'<div class="flashcard-grid">{cards}</div>\n'
+            f'{heading_html}<div class="flashcard-grid">{cards}</div>\n'
             f'<p class="flashcard-hint">Click card to flip</p>\n'
             f"</div>"
         )
 
-    def _render_quiz_group(self, items: list) -> str:
+    def _render_quiz_group(self, items: list, heading: str = "") -> str:
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         quizzes = ""
         for qi, s in enumerate(items):
             question = s.get("heading", "")
@@ -301,11 +289,12 @@ class InteractiveWebRenderer(BaseRenderer):
                 f'</div>\n'
             )
         return (
-            f'<div class="section quiz-group" data-section>\n{quizzes}</div>'
+            f'<div class="section quiz-group" data-section>\n{heading_html}{quizzes}</div>'
         )
 
-    def _render_reveal_group(self, items: list, group_id: str) -> str:
+    def _render_reveal_group(self, items: list, group_id: str, heading: str = "") -> str:
         safe_id = html.escape(group_id)
+        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
         steps = ""
         for i, s in enumerate(items):
             heading = s.get("heading", "")
@@ -319,7 +308,7 @@ class InteractiveWebRenderer(BaseRenderer):
             )
         return (
             f'<div class="section reveal-group" data-section>\n'
-            f'<div class="reveal-steps">{steps}</div>\n'
+            f'{heading_html}<div class="reveal-steps">{steps}</div>\n'
             f'<div class="reveal-controls">\n'
             f'<button class="reveal-btn" onclick="revealNext(\'{safe_id}\', 1)">'
             f'Next &#8594;</button>\n'
