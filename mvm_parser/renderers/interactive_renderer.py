@@ -11,6 +11,7 @@ from ..plugins.loader import PluginLoader
 
 
 class InteractiveWebRenderer(BaseRenderer):
+    capabilities = ["interactive", "media", "tree", "dark_mode", "search", "toc"]
     def __init__(self):
         self._plugin_loader = PluginLoader()
         self._plugin_loader.load_builtin_plugins()

@@ -93,6 +93,23 @@ def cmd_render(args):
     kwargs = {}
     if renderer_name == "interactive" and args.dark:
         kwargs["dark"] = True
+    if renderer_name == "interactive" and hasattr(renderer, "load_plugins_from_dir"):
+        if args.plugin_dir:
+            count = renderer.load_plugins_from_dir(args.plugin_dir)
+            if count:
+                print(f"Loaded {count} plugin(s) from {args.plugin_dir}", file=sys.stderr)
+        mvm_dir = os.path.dirname(os.path.abspath(args.file))
+        plugins_dir = os.path.join(mvm_dir, "plugins")
+        if os.path.isdir(plugins_dir):
+            count = renderer.load_plugins_from_dir(plugins_dir)
+            if count:
+                print(f"Loaded {count} plugin(s) from {plugins_dir}", file=sys.stderr)
+    missing = renderer.check_requirements(result.schema.requires)
+    if missing:
+        print(
+            f"Warning: Renderer '{renderer_name}' does not support: {', '.join(missing)}",
+            file=sys.stderr,
+        )
     output = renderer.render(result, **kwargs)
 
     if args.output:
@@ -130,6 +147,7 @@ def main():
     )
     p_render.add_argument("-o", "--output", help="Output file path (default: stdout)")
     p_render.add_argument("--dark", action="store_true", help="Dark mode (interactive renderer only)")
+    p_render.add_argument("--plugin-dir", help="Additional plugin directory to load")
 
     args = p.parse_args()
 

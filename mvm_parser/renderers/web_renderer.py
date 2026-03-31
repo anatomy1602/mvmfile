@@ -9,6 +9,7 @@ from ..renderers import BaseRenderer
 
 
 class WebRenderer(BaseRenderer):
+    capabilities = ["media", "tree"]
     def file_extension(self) -> str:
         return "html"
 

@@ -59,6 +59,8 @@ class Schema:
     version: str = "1.0"
     root_type: str = ""
     types: dict[str, TypeDefinition] = field(default_factory=dict)
+    plugins: list[str] = field(default_factory=list)
+    requires: list[str] = field(default_factory=list)
 
     def get_type(self, name: str) -> Optional[TypeDefinition]:
         return self.types.get(name)

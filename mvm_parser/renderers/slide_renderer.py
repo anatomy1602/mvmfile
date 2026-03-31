@@ -9,6 +9,7 @@ from ..renderers import BaseRenderer
 
 
 class SlideRenderer(BaseRenderer):
+    capabilities = ["media", "tree", "slide"]
     def file_extension(self) -> str:
         return "html"
 

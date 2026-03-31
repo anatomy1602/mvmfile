@@ -47,6 +47,14 @@ class ModelParser:
                 schema.version = stripped[9:].strip()
                 continue
 
+            if stripped.startswith("@plugins"):
+                schema.plugins = self._parse_directive_list(stripped[8:], line_num)
+                continue
+
+            if stripped.startswith("@requires"):
+                schema.requires = self._parse_directive_list(stripped[9:], line_num)
+                continue
+
             if ":" not in stripped:
                 raise ModelParserError(
                     f"Line {line_num}: Expected field definition 'name: type', got '{stripped}'"
@@ -121,3 +129,14 @@ class ModelParser:
             return FieldType(kind=FieldTypeKind.REF, ref_name=type_str)
 
         raise ModelParserError(f"Line {line_num}: Unknown type '{type_str}'")
+
+    def _parse_directive_list(self, text: str, line_num: int) -> list[str]:
+        text = text.strip()
+        if not text:
+            return []
+        if text.startswith("[") and text.endswith("]"):
+            inner = text[1:-1].strip()
+            if not inner:
+                return []
+            return [v.strip() for v in inner.split(",") if v.strip()]
+        return [v.strip() for v in text.split(",") if v.strip()]

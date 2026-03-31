@@ -8,6 +8,7 @@ from ..renderers import BaseRenderer
 
 
 class MdRenderer(BaseRenderer):
+    capabilities = ["tree"]
     def file_extension(self) -> str:
         return "md"
 
