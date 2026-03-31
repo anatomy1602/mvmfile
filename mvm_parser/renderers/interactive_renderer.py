@@ -7,9 +7,17 @@ InteractiveWebRenderer - 交互式网页渲染器
 import html
 from ..data_object import DataObject
 from ..renderers import BaseRenderer
+from ..plugins.loader import PluginLoader
 
 
 class InteractiveWebRenderer(BaseRenderer):
+    def __init__(self):
+        self._plugin_loader = PluginLoader()
+        self._plugin_loader.load_builtin_plugins()
+
+    def load_plugins_from_dir(self, directory: str) -> int:
+        return self._plugin_loader.load_from_directory(directory)
+
     def file_extension(self) -> str:
         return "html"
 
@@ -40,6 +48,7 @@ class InteractiveWebRenderer(BaseRenderer):
 <title>{html.escape(title)}</title>
 <style>
 {self._get_css(dark)}
+{self._get_plugin_css()}
 </style>
 </head>
 <body class="{dark_class}">
@@ -86,6 +95,7 @@ class InteractiveWebRenderer(BaseRenderer):
 </div>
 <script>
 {self._get_js()}
+{self._get_plugin_js()}
 </script>
 </body>
 </html>"""
@@ -97,7 +107,7 @@ class InteractiveWebRenderer(BaseRenderer):
                 continue
             fmt = s.get("format", "paragraph")
             children = s.get("children", [])
-            if children and fmt in ("tab", "accordion", "timeline", "flashcard", "quiz", "reveal"):
+            if children and self._plugin_loader.has(fmt):
                 parts.append(self._render_container_section(s, children))
             else:
                 parts.append(self._render_basic_section(s))
@@ -105,20 +115,9 @@ class InteractiveWebRenderer(BaseRenderer):
 
     def _render_container_section(self, section: DataObject, children: list) -> str:
         fmt = section.get("format", "paragraph")
-        heading = section.get("heading", "")
-        group_id = heading or "default"
-        if fmt == "tab":
-            return self._render_tab_group(children, group_id, heading)
-        elif fmt == "accordion":
-            return self._render_accordion_group(children, group_id, heading)
-        elif fmt == "timeline":
-            return self._render_timeline_group(children, heading)
-        elif fmt == "flashcard":
-            return self._render_flashcard_group(children, heading)
-        elif fmt == "quiz":
-            return self._render_quiz_group(children, heading)
-        elif fmt == "reveal":
-            return self._render_reveal_group(children, group_id, heading)
+        plugin = self._plugin_loader.get(fmt)
+        if plugin:
+            return plugin.render(section, children)
         return self._render_basic_section(section)
 
     def _render_basic_section(self, section: DataObject) -> str:
@@ -162,110 +161,6 @@ class InteractiveWebRenderer(BaseRenderer):
             f"{heading_html}\n{media_html}\n{body_html}\n{items_html}\n{source_html}\n</div>"
         )
 
-    def _render_tab_group(self, items: list, group_id: str, heading: str = "") -> str:
-        safe_id = html.escape(group_id)
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        tab_btns = ""
-        tab_panels = ""
-        for i, s in enumerate(items):
-            heading = s.get("heading", f"Tab {i+1}")
-            body = s.get("body", "")
-            items_list = s.get("items", [])
-            active = ' active' if i == 0 else ""
-            tab_btns += (
-                f'<button class="tab-btn{active}" '
-                f'onclick="switchTab(this, \'{safe_id}\', {i})">'
-                f"{html.escape(heading)}</button>\n"
-            )
-            content = html.escape(body) if body else ""
-            if items_list:
-                content += '<ul class="items">' + "".join(
-                    f"<li>{html.escape(it)}</li>" for it in items_list
-                ) + "</ul>"
-            tab_panels += (
-                f'<div class="tab-panel{active}" '
-                f'data-tab-group="{safe_id}" data-tab-index="{i}">'
-                f'<div class="body">{content}</div></div>\n'
-            )
-        return (
-            f'<div class="section tab-group" data-section>\n'
-            f'{heading_html}'
-            f'<div class="tab-bar">{tab_btns}</div>\n'
-            f'<div class="tab-content">{tab_panels}</div>\n'
-            f"</div>"
-        )
-
-    def _render_accordion_group(self, items: list, group_id: str, heading: str = "") -> str:
-        safe_id = html.escape(group_id)
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        panels = ""
-        for i, s in enumerate(items):
-            heading = s.get("heading", f"Section {i+1}")
-            body = s.get("body", "")
-            items_list = s.get("items", [])
-            content = html.escape(body) if body else ""
-            if items_list:
-                content += '<ul class="items">' + "".join(
-                    f"<li>{html.escape(it)}</li>" for it in items_list
-                ) + "</ul>"
-            panels += (
-                f'<div class="accordion-item">\n'
-                f'<button class="accordion-header" '
-                f'onclick="toggleAccordion(this)">\n'
-                f'<span>{html.escape(heading)}</span>\n'
-                f'<span class="accordion-arrow">&#9660;</span>\n'
-                f'</button>\n'
-                f'<div class="accordion-body"><div class="body">{content}</div></div>\n'
-                f'</div>\n'
-            )
-        return (
-            f'<div class="section accordion-group" data-section>\n{heading_html}{panels}</div>'
-        )
-
-    def _render_timeline_group(self, items: list, heading: str = "") -> str:
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        entries = ""
-        for i, s in enumerate(items):
-            heading = s.get("heading", "")
-            body = s.get("body", "")
-            side = "left" if i % 2 == 0 else "right"
-            entries += (
-                f'<div class="timeline-item timeline-{side}">\n'
-                f'<div class="timeline-dot"></div>\n'
-                f'<div class="timeline-card">\n'
-                f'<h3>{html.escape(heading)}</h3>\n'
-                f'<div class="body">{html.escape(body)}</div>\n'
-                f'</div>\n</div>\n'
-            )
-        return (
-            f'<div class="section timeline-group" data-section>\n'
-            f'{heading_html}<div class="timeline">{entries}</div>\n</div>'
-        )
-
-    def _render_flashcard_group(self, items: list, heading: str = "") -> str:
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        cards = ""
-        for s in items:
-            front = s.get("heading", "")
-            back = s.get("body", "")
-            cards += (
-                f'<div class="flashcard" onclick="flipCard(this)">\n'
-                f'<div class="flashcard-inner">\n'
-                f'<div class="flashcard-front">\n'
-                f'<div class="body">{html.escape(front)}</div>\n'
-                f'</div>\n'
-                f'<div class="flashcard-back">\n'
-                f'<div class="body">{html.escape(back)}</div>\n'
-                f'</div>\n'
-                f'</div>\n</div>\n'
-            )
-        return (
-            f'<div class="section flashcard-group" data-section>\n'
-            f'{heading_html}<div class="flashcard-grid">{cards}</div>\n'
-            f'<p class="flashcard-hint">Click card to flip</p>\n'
-            f"</div>"
-        )
-
     def _render_media(self, image: str, audio: str, video: str) -> str:
         parts = []
         if image:
@@ -275,67 +170,6 @@ class InteractiveWebRenderer(BaseRenderer):
         if audio:
             parts.append(f'<div class="media-audio"><audio controls><source src="{html.escape(audio)}">Your browser does not support audio.</audio></div>')
         return "\n".join(parts)
-
-    def _render_quiz_group(self, items: list, heading: str = "") -> str:
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        quizzes = ""
-        for qi, s in enumerate(items):
-            question = s.get("heading", "")
-            options = s.get("items", [])
-            correct = s.get("correct_answer", 0)
-            explanation = s.get("body", "")
-            opts_html = ""
-            for oi, opt in enumerate(options):
-                opts_html += (
-                    f'<button class="quiz-option" '
-                    f'data-quiz="{qi}" data-index="{oi}" '
-                    f'data-correct="{correct}" '
-                    f'onclick="checkAnswer(this)">'
-                    f'<span class="quiz-label">'
-                    f'{"ABCD"[oi]}</span> {html.escape(opt)}</button>\n'
-                )
-            quizzes += (
-                f'<div class="quiz-item" data-quiz-id="{qi}">\n'
-                f'<div class="quiz-question">\n'
-                f'<span class="quiz-num">Q{qi+1}</span>\n'
-                f'<span>{html.escape(question)}</span>\n'
-                f'</div>\n'
-                f'<div class="quiz-options">{opts_html}</div>\n'
-                f'<div class="quiz-feedback" id="feedback-{qi}"></div>\n'
-                f'<div class="quiz-explanation" id="explain-{qi}" style="display:none">'
-                f'<div class="body">{html.escape(explanation)}</div></div>\n'
-                f'</div>\n'
-            )
-        return (
-            f'<div class="section quiz-group" data-section>\n{heading_html}{quizzes}</div>'
-        )
-
-    def _render_reveal_group(self, items: list, group_id: str, heading: str = "") -> str:
-        safe_id = html.escape(group_id)
-        heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
-        steps = ""
-        for i, s in enumerate(items):
-            heading = s.get("heading", "")
-            body = s.get("body", "")
-            steps += (
-                f'<div class="reveal-step" '
-                f'data-reveal-group="{safe_id}" data-reveal-step="{i}">\n'
-                f'<h3>{html.escape(heading)}</h3>\n'
-                f'<div class="body">{html.escape(body)}</div>\n'
-                f'</div>\n'
-            )
-        return (
-            f'<div class="section reveal-group" data-section>\n'
-            f'{heading_html}<div class="reveal-steps">{steps}</div>\n'
-            f'<div class="reveal-controls">\n'
-            f'<button class="reveal-btn" onclick="revealNext(\'{safe_id}\', 1)">'
-            f'Next &#8594;</button>\n'
-            f'<button class="reveal-btn" onclick="revealNext(\'{safe_id}\', -1)">'
-            f'&#8592; Prev</button>\n'
-            f'<button class="reveal-btn" onclick="revealAll(\'{safe_id}\')">'
-            f'Show All</button>\n'
-            f'</div>\n</div>'
-        )
 
     def _build_toc(self, sections: list) -> str:
         items = []
@@ -354,6 +188,26 @@ class InteractiveWebRenderer(BaseRenderer):
             )
             idx += 1
         return "\n".join(items)
+
+    def _get_plugin_css(self) -> str:
+        parts = []
+        for name in self._plugin_loader.list_names():
+            plugin = self._plugin_loader.get(name)
+            if plugin:
+                css = plugin.get_css()
+                if css.strip():
+                    parts.append(f"/* Plugin: {name} */\n{css}")
+        return "\n".join(parts)
+
+    def _get_plugin_js(self) -> str:
+        parts = []
+        for name in self._plugin_loader.list_names():
+            plugin = self._plugin_loader.get(name)
+            if plugin:
+                js = plugin.get_js()
+                if js.strip():
+                    parts.append(f"// Plugin: {name}\n{js}")
+        return "\n".join(parts)
 
     def _get_css(self, dark: bool) -> str:
         return """
@@ -496,117 +350,6 @@ body.dark .section.format-warning { background: #2d1215; }
   color: var(--text-light); font-size: 0.85em; text-align: center;
 }
 
-/* Tab */
-.tab-bar {
-  display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 16px;
-}
-.tab-btn {
-  padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent;
-  color: var(--text-muted); cursor: pointer; font-size: 0.95em; font-weight: 500;
-  transition: all 0.2s; margin-bottom: -2px;
-}
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab-panel { display: none; padding: 16px 0; animation: fadeIn 0.3s; }
-.tab-panel.active { display: block; }
-
-/* Accordion */
-.accordion-item { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
-.accordion-header {
-  width: 100%; padding: 14px 18px; background: var(--bg-card); border: none;
-  display: flex; justify-content: space-between; align-items: center;
-  cursor: pointer; font-size: 1em; color: var(--text); text-align: left;
-  transition: background 0.2s;
-}
-.accordion-header:hover { background: var(--accent-light); }
-.accordion-arrow { transition: transform 0.3s; font-size: 0.8em; }
-.accordion-item.open .accordion-arrow { transform: rotate(180deg); }
-.accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
-.accordion-item.open .accordion-body { max-height: 2000px; }
-.accordion-body .body { padding: 0 18px 14px; }
-
-/* Timeline */
-.timeline { position: relative; padding: 20px 0; }
-.timeline::before {
-  content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
-  width: 3px; background: var(--border); transform: translateX(-50%);
-}
-.timeline-item { display: flex; margin-bottom: 32px; position: relative; }
-.timeline-left { justify-content: flex-start; padding-right: calc(50% + 30px); text-align: right; }
-.timeline-right { justify-content: flex-end; padding-left: calc(50% + 30px); }
-.timeline-dot {
-  position: absolute; left: 50%; top: 16px; width: 14px; height: 14px;
-  background: var(--accent); border-radius: 50%; transform: translateX(-50%);
-  border: 3px solid var(--bg); z-index: 1;
-}
-.timeline-card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 8px var(--shadow);
-}
-.timeline-card h3 { font-size: 1.1em; margin-bottom: 6px; color: var(--accent); }
-
-/* Flashcard */
-.flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-.flashcard {
-  height: 200px; perspective: 600px; cursor: pointer;
-}
-.flashcard-inner {
-  width: 100%; height: 100%; position: relative;
-  transition: transform 0.6s; transform-style: preserve-3d;
-}
-.flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
-.flashcard-front, .flashcard-back {
-  position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-  display: flex; align-items: center; justify-content: center; padding: 20px;
-  border-radius: 12px; text-align: center;
-}
-.flashcard-front { background: var(--accent); color: #fff; font-weight: 600; }
-.flashcard-back { background: var(--bg-card); border: 2px solid var(--accent); transform: rotateY(180deg); }
-.flashcard-hint { text-align: center; color: var(--text-light); font-size: 0.85em; margin-top: 12px; }
-
-/* Quiz */
-.quiz-item {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 24px; margin-bottom: 20px;
-  box-shadow: 0 2px 8px var(--shadow);
-}
-.quiz-question { display: flex; gap: 10px; margin-bottom: 16px; font-size: 1.1em; font-weight: 600; }
-.quiz-num {
-  background: var(--accent); color: #fff; padding: 2px 10px;
-  border-radius: 6px; font-size: 0.85em; flex-shrink: 0;
-}
-.quiz-options { display: flex; flex-direction: column; gap: 8px; }
-.quiz-option {
-  padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px;
-  background: var(--bg); cursor: pointer; text-align: left;
-  font-size: 0.95em; color: var(--text); transition: all 0.2s;
-  display: flex; align-items: center; gap: 10px;
-}
-.quiz-option:hover:not(.disabled) { border-color: var(--accent); background: var(--accent-light); }
-.quiz-option.correct { border-color: var(--success); background: #e8f8f0; }
-.quiz-option.wrong { border-color: var(--danger); background: #fdecea; }
-.quiz-option.disabled { cursor: default; opacity: 0.7; }
-.quiz-label {
-  background: var(--border); color: var(--text-muted); padding: 2px 8px;
-  border-radius: 4px; font-size: 0.8em; font-weight: 700; flex-shrink: 0;
-}
-.quiz-feedback { margin-top: 12px; font-weight: 600; font-size: 0.95em; }
-.quiz-explanation { margin-top: 12px; padding: 12px; background: var(--accent-light); border-radius: 8px; }
-
-/* Reveal */
-.reveal-step {
-  opacity: 0; transform: translateY(20px);
-  transition: opacity 0.5s, transform 0.5s; margin-bottom: 16px;
-  padding: 16px; border-left: 3px solid var(--accent);
-}
-.reveal-step.visible { opacity: 1; transform: translateY(0); }
-.reveal-controls { display: flex; gap: 8px; margin-top: 16px; }
-.reveal-btn {
-  padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-  background: var(--bg-card); color: var(--text); cursor: pointer; font-size: 0.9em;
-}
-.reveal-btn:hover { background: var(--accent-light); border-color: var(--accent); }
-
 /* Search highlight */
 .search-hidden { display: none !important; }
 mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
@@ -622,77 +365,11 @@ body.dark mark { background: #3d3400; }
   .sidebar-close { display: block; }
   .content { margin-left: 0; }
   .menu-btn { display: block; }
-  .timeline::before { left: 20px; }
-  .timeline-item { padding-left: 50px !important; padding-right: 0 !important; text-align: left !important; }
-  .timeline-dot { left: 20px; }
-  .flashcard-grid { grid-template-columns: 1fr; }
 }
 """  # noqa: E501
 
     def _get_js(self) -> str:
         return """
-function switchTab(btn, groupId, index) {
-  var bar = btn.parentElement;
-  var btns = bar.querySelectorAll('.tab-btn');
-  btns.forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-  var panels = document.querySelectorAll('[data-tab-group="' + groupId + '"]');
-  panels.forEach(function(p) {
-    p.classList.toggle('active', parseInt(p.dataset.tabIndex) === index);
-  });
-}
-
-function toggleAccordion(header) {
-  var item = header.parentElement;
-  var wasOpen = item.classList.contains('open');
-  var group = item.parentElement;
-  group.querySelectorAll('.accordion-item').forEach(function(ai) {
-    ai.classList.remove('open');
-  });
-  if (!wasOpen) item.classList.add('open');
-}
-
-function flipCard(card) {
-  card.classList.toggle('flipped');
-}
-
-function checkAnswer(btn) {
-  var quizId = btn.dataset.quiz;
-  var idx = parseInt(btn.dataset.index);
-  var correct = parseInt(btn.dataset.correct);
-  var options = document.querySelectorAll('[data-quiz="' + quizId + '"]');
-  var feedback = document.getElementById('feedback-' + quizId);
-  var explain = document.getElementById('explain-' + quizId);
-  options.forEach(function(o) { o.classList.add('disabled'); });
-  if (idx === correct) {
-    btn.classList.add('correct');
-    feedback.textContent = 'Correct!';
-    feedback.style.color = 'var(--success)';
-  } else {
-    btn.classList.add('wrong');
-    options[correct].classList.add('correct');
-    feedback.textContent = 'Incorrect. The correct answer is highlighted.';
-    feedback.style.color = 'var(--danger)';
-  }
-  if (explain.textContent.trim()) explain.style.display = 'block';
-}
-
-var revealCounters = {};
-function revealNext(groupId, dir) {
-  if (!revealCounters[groupId]) revealCounters[groupId] = 0;
-  var steps = document.querySelectorAll('[data-reveal-group="' + groupId + '"]');
-  var total = steps.length;
-  revealCounters[groupId] = Math.max(0, Math.min(total, revealCounters[groupId] + dir));
-  steps.forEach(function(s, i) {
-    s.classList.toggle('visible', i < revealCounters[groupId]);
-  });
-}
-function revealAll(groupId) {
-  var steps = document.querySelectorAll('[data-reveal-group="' + groupId + '"]');
-  steps.forEach(function(s) { s.classList.add('visible'); });
-  revealCounters[groupId] = steps.length;
-}
-
 function filterSections(query) {
   var sections = document.querySelectorAll('[data-section]');
   query = query.toLowerCase().trim();
