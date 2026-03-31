@@ -48,9 +48,7 @@ class MsgParser:
                 break
 
             if current_indent > indent:
-                raise MsgParserError(
-                    f"Line {i + 1}: Unexpected indentation increase without field context"
-                )
+                break
 
             if stripped.startswith("## "):
                 break
@@ -238,7 +236,37 @@ class MsgParser:
                 if inline_field in ref_type_def.fields:
                     fd = ref_type_def.fields[inline_field]
                     obj.fields[inline_field] = self._cast_value(inline_value, fd.type)
-            obj, i = self._parse_object(lines, i + 1, ref_type_def, schema, indent + 2, obj)
+
+            field_indent = indent + 2
+            peek = i + 1
+            while peek < len(lines):
+                peek_line = lines[peek]
+                peek_stripped = peek_line.strip()
+                if not peek_stripped or peek_stripped.startswith("//"):
+                    peek += 1
+                    continue
+                peek_ind = self._get_indent(peek_line)
+                if peek_ind > indent + 2 and not peek_stripped.startswith("## "):
+                    field_indent = peek_ind
+                break
+
+            obj, i = self._parse_object(lines, i + 1, ref_type_def, schema, field_indent, obj)
+
+            children_field = ref_type_def.fields.get("children")
+            if children_field and children_field.type.kind == FieldTypeKind.ARRAY:
+                if children_field.type.element_type and children_field.type.element_type.kind == FieldTypeKind.REF:
+                    child_item_indent = indent + 4
+                    if i < len(lines):
+                        next_line = lines[i]
+                        next_stripped = next_line.strip()
+                        if next_stripped and not next_stripped.startswith("//"):
+                            next_indent = self._get_indent(next_line)
+                            if next_indent >= child_item_indent and next_stripped.startswith("## "):
+                                i = self._parse_ref_array_field(
+                                    lines, i - 1, obj, "children",
+                                    children_field.type.element_type, "", schema, child_item_indent - 2
+                                )
+
             data.fields[field_name].append(obj)
 
         return i

@@ -1,0 +1,74 @@
+===MODEL===
+@type TreeDemo
+@version 2.0
+
+title: string
+subtitle: string?
+author: string
+sections: array<Section>
+
+@type Section
+heading: string
+body: text?
+format: enum(paragraph|tab|accordion|quiz|timeline|flashcard|reveal|tip|quote|code|list|scene)?
+items: array<string>?
+image: url?
+audio: url?
+video: url?
+background: url?
+correct_answer: int?
+children: array<Section>?
+
+===MSG===
+title: MVM v0.2 树结构演示
+subtitle: 嵌套 children 测试
+author: Alice
+sections:
+  ## heading: 介绍
+  format: paragraph
+  body: |
+    这是 v0.2 的核心改进：树结构。
+    sections 支持嵌套 children，表达能力质变。
+
+  ## heading: 前端框架对比
+  format: tab
+    ## heading: React
+      body: Meta 开发的 UI 库，采用虚拟 DOM。
+    ## heading: Vue
+      body: 渐进式 JavaScript 框架，以易学易用著称。
+    ## heading: Svelte
+      body: 编译型框架，没有虚拟 DOM。
+
+  ## heading: MVM 的优势
+  format: accordion
+    ## heading: 多视图渲染
+      body: 同一份 .mvm 文件可以渲染成网页、PPT、PDF。
+    ## heading: 内容与样式分离
+      body: 不像 PPT 那样内容写进去就被样式锁死。
+    ## heading: 版本管理友好
+      body: 纯文本格式，Git diff 清晰可见。
+
+  ## heading: 知识测试
+  format: quiz
+    ## heading: MVM 的三个要素是什么？
+      items:
+        - Model, View, Controller
+        - Model, View, Msg
+        - Model, Vue, MongoDB
+      correct_answer: 1
+      body: |
+        MVM = Model - View - Msg。
+    ## heading: MVM 属于哪一层？
+      items:
+        - 应用层
+        - 内容层
+        - 数据层
+      correct_answer: 1
+      body: |
+        MVM 属于内容层，只管内容怎么存、怎么呈现。
+
+  ## heading: 总结
+  format: tip
+  body: |
+    树结构让 MVM 的表达能力质变。
+    quiz 可以嵌套在 tab 里，accordion 可以嵌套在 timeline 里。
