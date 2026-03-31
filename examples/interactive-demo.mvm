@@ -1,6 +1,6 @@
 ===MODEL===
 @type InteractiveDemo
-@version 1.0
+@version 2.0
 
 title: string
 subtitle: string?
@@ -11,17 +11,16 @@ sections: array<Section>
 
 @type Section
 heading: string
-body: text
-format: enum(paragraph|quote|code|list|tip|warning|tab|accordion|timeline|flashcard|quiz|reveal)
+body: text?
+format: enum(paragraph|quote|code|list|tip|warning|tab|accordion|timeline|flashcard|quiz|reveal|scene)?
 items: array<string>?
 source: url?
-tab_group: string?
-accordion_group: string?
-timeline_group: string?
-flashcard_group: string?
-quiz_group: string?
-reveal_group: string?
+image: url?
+audio: url?
+video: url?
+background: url?
 correct_answer: int?
+children: array<Section>?
 
 ===MSG===
 title: MVM 交互式渲染演示
@@ -33,6 +32,7 @@ tags: [MVM, 交互, 渲染器, 前端]
 sections:
   ## heading: 什么是 MVM
   format: paragraph
+  image: https://picsum.photos/800/300
   body: |
     MVM = Model - View - Msg
     一种面向内容呈现的文件架构模式。
@@ -45,182 +45,139 @@ sections:
     交互逻辑属于 View 层，不属于 Model/Msg 层。
     .mvm 文件永远不需要写任何 JavaScript。
 
-  ## heading: Tab 标签页 - 前端框架对比
-  tab_group: frameworks
+  ## heading: 前端框架对比
   format: tab
-  body: |
-    React 是 Meta 开发的 UI 库，采用虚拟 DOM 和 JSX 语法。
-    它是目前全球使用最广泛的前端框架。
+    ## heading: React
+      image: https://picsum.photos/600/200
+      body: |
+        React 是 Meta 开发的 UI 库，采用虚拟 DOM 和 JSX 语法。
+        它是目前全球使用最广泛的前端框架。
+    ## heading: Vue
+      image: https://picsum.photos/600/200
+      body: |
+        Vue 是渐进式 JavaScript 框架，以易学易用著称。
+        它提供了响应式数据绑定和组件化开发能力。
+    ## heading: Svelte
+      image: https://picsum.photos/600/200
+      body: |
+        Svelte 是编译型框架，没有虚拟 DOM。
+        它在构建时将组件编译为高效的原生 JavaScript。
 
-  ## heading: Vue
-  tab_group: frameworks
-  format: tab
-  body: |
-    Vue 是渐进式 JavaScript 框架，以易学易用著称。
-    它提供了响应式数据绑定和组件化开发能力。
-
-  ## heading: Svelte
-  tab_group: frameworks
-  format: tab
-  body: |
-    Svelte 是编译型框架，没有虚拟 DOM。
-    它在构建时将组件编译为高效的原生 JavaScript。
-
-  ## heading: 手风琴 - MVM 的优势
-  accordion_group: advantages
+  ## heading: MVM 的优势
   format: accordion
-  body: |
-    同一份 .mvm 文件可以渲染成网页、PPT、PDF、语音等任意形式。
-    内容写一次，呈现方式无限切换。
+    ## heading: 多视图渲染
+      body: |
+        同一份 .mvm 文件可以渲染成网页、PPT、PDF、语音等任意形式。
+        内容写一次，呈现方式无限切换。
+    ## heading: 内容与样式分离
+      body: |
+        不像 PPT 那样内容写进去就被样式锁死。
+        MVM 的内容写进去时，呈现方式还没有被决定。
+    ## heading: 版本管理友好
+      body: |
+        纯文本格式，Git diff 清晰可见。
+        协作编辑冲突少，合并容易。
+    ## heading: 零框架依赖
+      body: |
+        纯 Python 解析，纯 HTML/CSS/JS 渲染。
+        不依赖 React、Vue 或任何前端框架。
 
-  ## heading: 内容与样式分离
-  accordion_group: advantages
-  format: accordion
-  body: |
-    不像 PPT 那样内容写进去就被样式锁死。
-    MVM 的内容写进去时，呈现方式还没有被决定。
-
-  ## heading: 版本管理友好
-  accordion_group: advantages
-  format: accordion
-  body: |
-    纯文本格式，Git diff 清晰可见。
-    协作编辑冲突少，合并容易。
-
-  ## heading: 零框架依赖
-  accordion_group: advantages
-  format: accordion
-  body: |
-    纯 Python 解析，纯 HTML/CSS/JS 渲染。
-    不依赖 React、Vue 或任何前端框架。
-
-  ## heading: 时间线 - MVM 发展历程
-  timeline_group: history
+  ## heading: MVM 发展历程
   format: timeline
-  body: |
-    提出 MVM 架构概念。
-    定义 Model-View-Msg 三要素分离原则。
+    ## heading: 架构设计
+      body: |
+        提出 MVM 架构概念。
+        定义 Model-View-Msg 三要素分离原则。
+    ## heading: 解析器开发
+      body: |
+        完成 Python 核心解析器。
+        支持 Blocker、ModelParser、MsgParser。
+        实现 CLI 工具。
+    ## heading: 基础渲染器
+      body: |
+        实现 Web、Markdown、Slide 三个基础渲染器。
+        验证"同一内容，多种呈现"的核心价值。
+    ## heading: 交互式渲染器
+      body: |
+        实现 InteractiveWebRenderer。
+        支持 Tab、手风琴、闪卡、测验、时间线等交互组件。
+        所有交互由渲染器注入，.mvm 文件零 JavaScript。
 
-  ## heading: 解析器开发
-  timeline_group: history
-  format: timeline
-  body: |
-    完成 Python 核心解析器。
-    支持 Blocker、ModelParser、MsgParser。
-    实现 CLI 工具。
-
-  ## heading: 基础渲染器
-  timeline_group: history
-  format: timeline
-  body: |
-    实现 Web、Markdown、Slide 三个基础渲染器。
-    验证"同一内容，多种呈现"的核心价值。
-
-  ## heading: 交互式渲染器
-  timeline_group: history
-  format: timeline
-  body: |
-    实现 InteractiveWebRenderer。
-    支持 Tab、手风琴、闪卡、测验、时间线等交互组件。
-    所有交互由渲染器注入，.mvm 文件零 JavaScript。
-
-  ## heading: MVM 是什么
-  flashcard_group: concepts
+  ## heading: 核心概念
   format: flashcard
-  body: |
-    Model-View-Msg，一种面向内容呈现的文件架构模式。
-    Model 存结构，Msg 存信息，View 自由渲染。
+    ## heading: MVM 是什么
+      body: |
+        Model-View-Msg，一种面向内容呈现的文件架构模式。
+        Model 存结构，Msg 存信息，View 自由渲染。
+    ## heading: MVM 和 PPT 的区别
+      body: |
+        PPT 内容与样式强绑定，换风格等于重做。
+        MVM 内容与样式完全分离，换渲染器即可换风格。
+    ## heading: MVM 和 Markdown 的区别
+      body: |
+        Markdown 结构太弱，无法精确驱动多视图渲染。
+        MVM 有显式类型系统和 Schema 验证。
+    ## heading: MVM 属于哪一层
+      body: |
+        内容层，不是应用层。
+        纯展示，无状态，无逻辑。
+        和 Mermaid、SVG 同属"伪前端"。
 
-  ## heading: MVM 和 PPT 的区别
-  flashcard_group: concepts
-  format: flashcard
-  body: |
-    PPT 内容与样式强绑定，换风格等于重做。
-    MVM 内容与样式完全分离，换渲染器即可换风格。
-
-  ## heading: MVM 和 Markdown 的区别
-  flashcard_group: concepts
-  format: flashcard
-  body: |
-    Markdown 结构太弱，无法精确驱动多视图渲染。
-    MVM 有显式类型系统和 Schema 验证。
-
-  ## heading: MVM 属于哪一层
-  flashcard_group: concepts
-  format: flashcard
-  body: |
-    内容层，不是应用层。
-    纯展示，无状态，无逻辑。
-    和 Mermaid、SVG 同属"伪前端"。
-
-  ## heading: 以下哪个是 MVM 的核心要素？
-  quiz_group: test1
+  ## heading: 知识测验
   format: quiz
-  body: |
-    MVM 的三个核心要素是 Model（结构定义）、View（呈现方式）和 Msg（文字信息）。
-  items:
-    - Model, View, Controller
-    - Model, View, Msg
-    - Model, Vue, MongoDB
-    - Markdown, View, Message
-  correct_answer: 1
+    ## heading: 以下哪个是 MVM 的核心要素？
+      items:
+        - Model, View, Controller
+        - Model, View, Msg
+        - Model, Vue, MongoDB
+        - Markdown, View, Message
+      correct_answer: 1
+      body: |
+        MVM 的三个核心要素是 Model（结构定义）、View（呈现方式）和 Msg（文字信息）。
+    ## heading: MVM 属于哪一层？
+      items:
+        - 应用层
+        - 内容层
+        - 数据层
+        - 网络层
+      correct_answer: 1
+      body: |
+        MVM 属于内容层，只管"内容怎么存、怎么呈现"，不管"用户怎么交互、数据怎么变"。
+    ## heading: .mvm 文件需要写 JavaScript 吗？
+      items:
+        - 需要，交互必须手写 JS
+        - 不需要，渲染器自动注入
+        - 看情况，复杂交互需要
+        - 只需要写 CSS
+      correct_answer: 1
+      body: |
+        .mvm 文件永远不需要写任何 JavaScript。所有交互由 View 渲染器在渲染时注入。
 
-  ## heading: MVM 属于哪一层？
-  quiz_group: test1
-  format: quiz
-  body: |
-    MVM 属于内容层，只管"内容怎么存、怎么呈现"，不管"用户怎么交互、数据怎么变"。
-  items:
-    - 应用层
-    - 内容层
-    - 数据层
-    - 网络层
-  correct_answer: 1
-
-  ## heading: .mvm 文件需要写 JavaScript 吗？
-  quiz_group: test1
-  format: quiz
-  body: |
-    .mvm 文件永远不需要写任何 JavaScript。所有交互由 View 渲染器在渲染时注入。
-  items:
-    - 需要，交互必须手写 JS
-    - 不需要，渲染器自动注入
-    - 看情况，复杂交互需要
-    - 只需要写 CSS
-  correct_answer: 1
-
-  ## heading: 渐进式揭示 - MVM 的设计哲学
-  reveal_group: philosophy
+  ## heading: MVM 的设计哲学
   format: reveal
-  body: |
-    第一步：分离结构与内容。
-    Model 定义骨架，Msg 填充血肉。
-
-  ## heading: View 的自由
-  reveal_group: philosophy
-  format: reveal
-  body: |
-    第二步：View 完全自由。
-    同一份数据可以渲染成网页、PPT、PDF、语音。
-
-  ## heading: 交互是 View 的事
-  reveal_group: philosophy
-  format: reveal
-  body: |
-    第三步：交互属于 View 层。
-    Tab、手风琴、测验、闪卡……全部由渲染器注入。
-
-  ## heading: 内容永远不变
-  reveal_group: philosophy
-  format: reveal
-  body: |
-    第四步：内容本身永远不变。
-    无论渲染成什么形式，Model + Msg 始终如一。
+    ## heading: 分离结构与内容
+      body: |
+        第一步：分离结构与内容。
+        Model 定义骨架，Msg 填充血肉。
+    ## heading: View 的自由
+      body: |
+        第二步：View 完全自由。
+        同一份数据可以渲染成网页、PPT、PDF、语音。
+    ## heading: 交互是 View 的事
+      body: |
+        第三步：交互属于 View 层。
+        Tab、手风琴、测验、闪卡……全部由渲染器注入。
+    ## heading: 内容永远不变
+      body: |
+        第四步：内容本身永远不变。
+        无论渲染成什么形式，Model + Msg 始终如一。
 
   ## heading: 总结
   format: tip
+  background: https://picsum.photos/1920/1080
   body: |
-    这份演示文件展示了 MVM 的 6 种交互组件：
-    Tab 标签页、手风琴折叠、时间线、闪卡翻转、测验问答、渐进式揭示。
+    这份演示文件展示了 MVM v0.2 的核心特性：
+    树结构嵌套、素材引用（图片/音频/视频/背景）、
+    6 种交互组件（Tab、手风琴、时间线、闪卡、测验、渐进式揭示）。
     所有交互均由 InteractiveWebRenderer 注入，.mvm 文件本身零 JavaScript。
     按 / 键可快速搜索，点击左上角菜单可切换暗色模式。
