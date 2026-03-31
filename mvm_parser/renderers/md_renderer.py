@@ -61,6 +61,9 @@ class MdRenderer(BaseRenderer):
         items = section.get("items", [])
         source = section.get("source", "")
         children = section.get("children", [])
+        image = section.get("image", "")
+        audio = section.get("audio", "")
+        video = section.get("video", "")
 
         if children and fmt in ("tab", "accordion", "quiz"):
             return self._render_container_section(section, index)
@@ -88,6 +91,15 @@ class MdRenderer(BaseRenderer):
                 lines.append("")
 
         if fmt not in ("quote", "code"):
+            if image:
+                lines.append(f"![image]({image})")
+                lines.append("")
+            if video:
+                lines.append(f"[video]({video})")
+                lines.append("")
+            if audio:
+                lines.append(f"[audio]({audio})")
+                lines.append("")
             if body:
                 lines.append(body)
                 lines.append("")

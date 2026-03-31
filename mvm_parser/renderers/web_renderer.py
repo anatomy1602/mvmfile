@@ -234,6 +234,27 @@ body {{
 .format-accordion .accordion-item .body {{
   padding: 12px 20px;
 }}
+.media-image {{
+  margin: 12px 0;
+}}
+.media-image img {{
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}}
+.media-video {{
+  margin: 12px 0;
+}}
+.media-video video {{
+  max-width: 100%;
+  border-radius: 8px;
+}}
+.media-audio {{
+  margin: 12px 0;
+}}
+.media-audio audio {{
+  width: 100%;
+}}
 .footer {{
   margin-top: 48px;
   padding-top: 24px;
@@ -270,6 +291,10 @@ body {{
         items = section.get("items", [])
         source = section.get("source", "")
         children = section.get("children", [])
+        image = section.get("image", "")
+        audio = section.get("audio", "")
+        video = section.get("video", "")
+        background = section.get("background", "")
 
         if children and fmt in ("tab", "accordion"):
             return self._render_container_section(section, children)
@@ -291,7 +316,11 @@ body {{
         if source:
             source_html = f'<div class="source"><a href="{html.escape(source)}">{html.escape(source)}</a></div>'
 
-        return f'<div class="section {css_class}">\n{heading_html}\n{body_html}\n{items_html}\n{source_html}\n</div>'
+        media_html = self._render_media(image, audio, video)
+
+        bg_style = f' style="background-image:url({html.escape(background)});background-size:cover;background-position:center;"' if background else ""
+
+        return f'<div class="section {css_class}"{bg_style}>\n{heading_html}\n{media_html}\n{body_html}\n{items_html}\n{source_html}\n</div>'
 
     def _render_container_section(self, section: DataObject, children: list) -> str:
         fmt = section.get("format", "paragraph")
@@ -341,3 +370,13 @@ body {{
             f'<div class="section format-accordion">\n{heading_html}\n'
             f'<div class="accordion-list">{items_html}</div>\n</div>'
         )
+
+    def _render_media(self, image: str, audio: str, video: str) -> str:
+        parts = []
+        if image:
+            parts.append(f'<div class="media-image"><img src="{html.escape(image)}" alt="" loading="lazy"></div>')
+        if video:
+            parts.append(f'<div class="media-video"><video controls><source src="{html.escape(video)}">Your browser does not support video.</video></div>')
+        if audio:
+            parts.append(f'<div class="media-audio"><audio controls><source src="{html.escape(audio)}">Your browser does not support audio.</audio></div>')
+        return "\n".join(parts)

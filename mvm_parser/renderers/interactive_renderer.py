@@ -127,6 +127,10 @@ class InteractiveWebRenderer(BaseRenderer):
         fmt = section.get("format", "paragraph")
         items = section.get("items", [])
         source = section.get("source", "")
+        image = section.get("image", "")
+        audio = section.get("audio", "")
+        video = section.get("video", "")
+        background = section.get("background", "")
 
         css_class = f"format-{fmt}" if fmt != "paragraph" else ""
         heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>'
@@ -149,9 +153,13 @@ class InteractiveWebRenderer(BaseRenderer):
                 f"{html.escape(source)}</a></div>"
             )
 
+        media_html = self._render_media(image, audio, video)
+
+        bg_style = f' style="background-image:url({html.escape(background)});background-size:cover;background-position:center;"' if background else ""
+
         return (
-            f'<div class="section {css_class}" data-section>\n'
-            f"{heading_html}\n{body_html}\n{items_html}\n{source_html}\n</div>"
+            f'<div class="section {css_class}" data-section{bg_style}>\n'
+            f"{heading_html}\n{media_html}\n{body_html}\n{items_html}\n{source_html}\n</div>"
         )
 
     def _render_tab_group(self, items: list, group_id: str, heading: str = "") -> str:
@@ -257,6 +265,16 @@ class InteractiveWebRenderer(BaseRenderer):
             f'<p class="flashcard-hint">Click card to flip</p>\n'
             f"</div>"
         )
+
+    def _render_media(self, image: str, audio: str, video: str) -> str:
+        parts = []
+        if image:
+            parts.append(f'<div class="media-image"><img src="{html.escape(image)}" alt="" loading="lazy"></div>')
+        if video:
+            parts.append(f'<div class="media-video"><video controls><source src="{html.escape(video)}">Your browser does not support video.</video></div>')
+        if audio:
+            parts.append(f'<div class="media-audio"><audio controls><source src="{html.escape(audio)}">Your browser does not support audio.</audio></div>')
+        return "\n".join(parts)
 
     def _render_quiz_group(self, items: list, heading: str = "") -> str:
         heading_html = f'<h2 class="section-heading" data-searchable>{html.escape(heading)}</h2>\n' if heading else ""
@@ -466,6 +484,13 @@ body.dark .section.format-warning { background: #2d1215; }
 .source { margin-top: 8px; font-size: 0.85em; }
 .source a { color: var(--accent); text-decoration: none; }
 .source a:hover { text-decoration: underline; }
+.media-image { margin: 12px 0; }
+.media-image img { max-width: 100%; height: auto; border-radius: 8px; }
+.media-video { margin: 12px 0; }
+.media-video video { max-width: 100%; border-radius: 8px; }
+.media-audio { margin: 12px 0; }
+.media-audio audio { width: 100%; }
+.section { background-size: cover; background-position: center; }
 .footer {
   margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
   color: var(--text-light); font-size: 0.85em; text-align: center;

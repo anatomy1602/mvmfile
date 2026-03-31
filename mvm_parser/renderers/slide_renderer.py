@@ -176,6 +176,10 @@ Reveal.initialize({{
         body = section.get("body", "")
         fmt = section.get("format", "paragraph")
         items = section.get("items", [])
+        image = section.get("image", "")
+        audio = section.get("audio", "")
+        video = section.get("video", "")
+        background = section.get("background", "")
 
         heading_html = f"<h2>{html.escape(heading)}</h2>"
 
@@ -197,7 +201,13 @@ Reveal.initialize({{
             return f"<section>\n{list_html}\n</section>"
 
         body_html = f'<div class="slide-body">{html.escape(body)}</div>' if body else ""
-        return f"<section>\n{heading_html}\n{body_html}\n</section>"
+        media_html = ""
+        if image:
+            media_html += f'<div class="slide-media"><img src="{html.escape(image)}" alt="" style="max-width:100%;border-radius:8px;"></div>'
+        if video:
+            media_html += f'<div class="slide-media"><video controls style="max-width:100%;"><source src="{html.escape(video)}"></video></div>'
+        bg_style = f' data-background-image="{html.escape(background)}"' if background else ""
+        return f"<section{bg_style}>\n{heading_html}\n{media_html}\n{body_html}\n</section>"
 
     def _render_container_slides(self, section: DataObject, children: list) -> str:
         heading = section.get("heading", "")

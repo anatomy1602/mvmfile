@@ -26,6 +26,7 @@ author: Alice
 sections:
   ## heading: 介绍
   format: paragraph
+  image: https://picsum.photos/800/400
   body: |
     这是 v0.2 的核心改进：树结构。
     sections 支持嵌套 children，表达能力质变。
@@ -69,6 +70,7 @@ sections:
 
   ## heading: 总结
   format: tip
+  background: https://picsum.photos/1920/1080
   body: |
     树结构让 MVM 的表达能力质变。
     quiz 可以嵌套在 tab 里，accordion 可以嵌套在 timeline 里。
