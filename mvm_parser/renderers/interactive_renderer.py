@@ -108,7 +108,7 @@ class InteractiveWebRenderer(BaseRenderer):
                 continue
             fmt = s.get("format", "paragraph")
             children = s.get("children", [])
-            if children and self._plugin_loader.has(fmt):
+            if self._plugin_loader.has(fmt):
                 parts.append(self._render_container_section(s, children))
             else:
                 parts.append(self._render_basic_section(s))

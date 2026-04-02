@@ -1,0 +1,283 @@
+===MODEL===
+@type InteractiveDemo
+@version 3.0
+@plugins tab, accordion, timeline, flashcard, quiz, reveal, table, list, quote, code
+@requires interactive, media, tree
+
+title: string
+subtitle: string?
+author: string
+date: datetime
+tags: array<string>
+sections: array<Section>
+
+@type Section
+heading: string
+body: text?
+format: enum(paragraph|quote|code|list|tip|warning|tab|accordion|timeline|flashcard|quiz|reveal|scene|table)?
+items: array<string>?
+source: url?
+image: url?
+audio: url?
+video: url?
+background: url?
+correct_answer: int?
+children: array<Section>?
+columns: array<Column>?
+rows: array<Row>?
+ordered: bool?
+caption: text?
+author: text?
+language: text?
+
+@type Column
+key: string
+label: string
+
+@type Row
+feature: string?
+markdown: string?
+notion: string?
+ink: string?
+mvm: string?
+highlight: bool?
+
+===MSG===
+title: MVM 核心生态
+subtitle: 让存档变成内容
+author: MVM Team
+date: 2026-04-01T12:00:00Z
+tags: [MVM, 生态, 游戏存档, AI]
+
+sections:
+  ## heading: 核心定位
+  format: quote
+  body: |
+    MVM 不是"更好的 Markdown"，也不是"通用内容协议"。
+    MVM 是"可分享的游戏/AI 过程协议"。
+  author: ChatGPT 分析
+  source: https://chatgpt.com/s/t_69cc95a0277481919e49d360c06a1ceb
+
+  ## heading: 核心洞察
+  format: quote
+  body: |
+    没有人把这三件事打通：可读 + 可渲染 + 可交换。
+    MVM 要做的是：统一"可读 + 可渲染 + 可交换"的内容中间层。
+  author: ChatGPT 分析
+  source: https://chatgpt.com/s/t_69cc95a0277481919e49d360c06a1ceb
+
+  ## heading: 为什么现在有机会？
+  format: list
+  ordered: true
+  items:
+    - AI 爆发：生成内容多，需要展示
+    - 游戏 UGC 爆发：玩家想分享过程，但缺格式
+    - 多端消费：Web / 视频 / 移动，内容需要多形态
+    - 这三点叠加：正好需要一个"内容中间层"
+
+  ## heading: MVM 的独特优势
+  format: table
+  caption: 与现有方案对比
+  columns:
+    ## key: feature
+      label: 特性
+    ## key: markdown
+      label: Markdown
+    ## key: notion
+      label: Notion
+    ## key: ink
+      label: Ink
+    ## key: mvm
+      label: MVM
+  rows:
+    ## feature: 可读性
+      markdown: 优
+      notion: 优
+      ink: 优
+      mvm: 优
+    ## feature: 游戏语义
+      markdown: 差
+      notion: 差
+      ink: 优
+      mvm: 优
+    ## feature: 跨系统
+      markdown: 优
+      notion: 差
+      ink: 差
+      mvm: 优
+    ## feature: 可渲染
+      markdown: 中
+      notion: 优
+      ink: 优
+      mvm: 优
+    ## feature: 可交换
+      markdown: 优
+      notion: 差
+      ink: 差
+      mvm: 优
+
+  ## heading: 生态分层
+  format: accordion
+    ## heading: Layer 1: 运行时层
+      body: |
+        - SillyTavern 前端
+        - AI 模型（GPT-4/Claude/Gemini）
+        - 扩展（LWB/变量插件等）
+    ## heading: Layer 2: 数据层
+      body: |
+        - 角色卡 PNG
+        - 聊天记录 JSONL
+        - 扩展数据
+    ## heading: Layer 3: 内容层 ← MVM 在这里
+      body: |
+        - 用户想分享的内容
+        - MVM 格式（Model + Msg）
+        - 语义化结构（chapters/scenes）
+    ## heading: Layer 4: 呈现层
+      body: |
+        - NovelRenderer（小说）
+        - VisualRenderer（视觉小说）
+        - TimelineRenderer（时间线）
+        - CharacterRenderer（角色卡）
+    ## heading: Layer 5: 分享层
+      body: |
+        - 论坛帖子
+        - Git 仓库
+        - 压缩文件
+
+  ## heading: 工作流程
+  format: timeline
+    ## heading: 用户侧（分享者）
+      body: |
+        SillyTavern 游玩
+        → 选择要分享的内容（剧情片段/角色卡/世界观）
+        → AI 生成 MVM 草稿（基于用户意图）
+        → 用户编辑 MVM 文件（可选）
+        → 分享 .mvm 文件
+    ## heading: 接收者侧
+      body: |
+        接收 .mvm 文件
+        → 选择渲染器（Novel/Visual/Timeline）
+        → 查看内容
+
+  ## heading: 核心原则
+  format: tab
+    ## heading: 语义优先
+      body: |
+        MVM 不按"维度"设计，按"语义"设计。
+        
+        | ❌ 维度设计 | ✅ 语义设计 |
+        |-----------|-----------|
+        | 一维：列表 | list |
+        | 二维：表格 | table |
+        | 三维：时间线 | timeline |
+    ## heading: 人机双友好
+      body: |
+        - 人可以直接阅读 .mvm 文件
+        - 程序可以精确解析
+        - AI 可以理解和生成
+    ## heading: 内容与呈现分离
+      body: |
+        同一个 MVM 文件可以渲染为：
+        - 小说
+        - 视觉小说
+        - 时间线
+        - 网页
+    ## heading: 不绑定任何平台
+      body: |
+        - 不依赖 SillyTavern
+        - 不依赖特定 AI 模型
+        - 不依赖特定前端
+
+  ## heading: 实现路线
+  format: accordion
+    ## heading: Phase 1: Killer Demo（决定生死）
+      body: |
+        目标：用一个真实案例证明 MVM 的价值。
+        
+        | 任务 | 优先级 | 说明 |
+        |------|--------|------|
+        | 选择真实游戏存档 | 高 | SillyTavern / 视觉小说 / 模拟经营 |
+        | 手动转换成 MVM | 高 | 展示"存档 → 内容"的过程 |
+        | 多种方式渲染 | 高 | Novel / Visual / Timeline |
+        | 分享测试 | 中 | 让别人能点开就看 |
+    ## heading: Phase 2: 生态工具
+      body: |
+        目标：降低使用门槛。
+        
+        | 任务 | 优先级 | 说明 |
+        |------|--------|------|
+        | SillyTavern 导出插件 | 高 | 一键导出 MVM |
+        | AI 辅助生成 | 高 | 用户描述意图，AI 生成 MVM |
+        | 在线渲染器 | 中 | 无需安装，直接查看 |
+    ## heading: Phase 3: 社区生态
+      body: |
+        目标：建立内容市场。
+        
+        | 任务 | 优先级 | 说明 |
+        |------|--------|------|
+        | 多平台转换器 | 中 | TavernAI / Oobabooga 等 |
+        | 内容市场 | 中 | 分享 MVM 文件的平台 |
+        | 社区插件 | 低 | 新的渲染器、新的转换器 |
+
+  ## heading: 风险与挑战
+  format: list
+  ordered: false
+  items:
+    - 可能做成"没人用的优雅协议"
+    - 生态难启动
+    - 容易过度设计
+    - 如果只做协议，不落地
+    - 如果成功：游戏 → 内容、AI → 内容、数据 → 内容
+    - 如果失败：一个很优雅的 YAML 语法 😄
+
+  ## heading: 关键建议
+  format: code
+  language: python
+  body: |
+    # 不要先做协议
+    
+    # 先做这个：
+    
+    # 1. 一个 Demo：把某个游戏存档 → MVM → 可视化页面
+    # 2. 找一个具体场景：
+    #    - AI 跑团记录
+    #    - 视觉小说存档
+    #    - 模拟经营游戏记录
+    # 3. 做"分享体验"：让别人能点开就看、可交互、可传播
+    
+    # Killer Demo 比继续设计协议重要 10 倍
+
+  ## heading: 核心使命
+  format: quote
+  body: |
+    MVM 的使命是：定义"内容的中间语言"，
+    让游戏 → 内容、AI → 内容、数据 → 内容。
+  author: MVM Team
+  source: https://github.com/anatomy1602/mvmfile
+
+  ## heading: 总结
+  format: tip
+  background: https://picsum.photos/1920/1080
+  body: |
+    这份文档展示了 MVM 的核心生态：
+    
+    1. **核心定位**：让存档变成内容
+    2. **独特优势**：可读 + 可渲染 + 可交换
+    3. **生态分层**：运行时 → 数据 → 内容 → 呈现 → 分享
+    4. **工作流程**：用户侧 + 接收者侧
+    5. **实现路线**：Killer Demo → 生态工具 → 社区生态
+    
+    **关键路径**：
+    1. 先做 Killer Demo（决定生死）
+    2. 再做生态工具（降低门槛）
+    3. 最后做社区生态（扩大影响）
+    
+    **如果成功**：
+    MVM 会成为游戏/AI 内容的通用格式
+    存档不再是"运行时数据"，而是"可分享的内容"
+    
+    **如果失败**：
+    会变成一个很优雅的 YAML 语法
+    
+    **所以，Killer Demo 比继续设计协议重要 10 倍。**
